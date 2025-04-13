@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Counting Trainer</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0b3d91; color: white; margin: 0; padding: 20px; text-align: center; }
+    .container { max-width: 700px; margin: 0 auto; padding: 20px; background: #1c1c1c; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.6); }
+    h1 { color: #ffd700; }
+    button { margin: 10px; padding: 10px 20px; border: none; border-radius: 8px; background: #ffd700; font-size: 16px; cursor: pointer; }
+    button:hover { background: #e6c200; }
+    .card { display: inline-block; background: white; color: black; font-weight: bold; font-size: 20px; padding: 10px 15px; border-radius: 8px; margin: 5px; }
+    #log { text-align: left; margin-top: 20px; font-size: 14px; background: #111; padding: 15px; border-radius: 10px; }
+    #deckDisplay { font-size: 20px; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🃏 Card Counting Practice Tool (Hi-Lo)</h1>
+    <p>Click "Deal Card" to start. Count in your head. Then check your count.</p>
+    <div>
+      <button onclick="dealCard()">🎴 Deal Card</button>
+      <button onclick="checkCount()">🧠 Show Running Count</button>
+      <button onclick="resetDeck()">🔁 Reset Deck</button>
+    </div>
+    <div id="deckDisplay"></div>
+    <h3>Running Count: <span id="runningCount">Hidden</span></h3>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    let deck = [];
+    let runningCount = 0;
+    const values = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
+
+    function buildDeck() {
+      deck = [];
+      for (let i = 0; i < 4; i++) { // 1 deck (4 suits)
+        for (let val of values) {
+          deck.push(val);
+        }
+      }
+      deck = deck.sort(() => Math.random() - 0.5); // Shuffle
+    }
+
+    function getHiLoValue(card) {
+      if ([2,3,4,5,6].includes(card)) return 1;
+      if ([10,"J","Q","K","A"].includes(card)) return -1;
+      return 0;
+    }
+
+    function dealCard() {
+      if (deck.length === 0) {
+        alert("Deck is empty. Please reset.");
+        return;
+      }
+      const card = deck.pop();
+      const value = typeof card === 'string' ? card : card.toString();
+      document.getElementById("deckDisplay").innerHTML += `<span class='card'>${value}</span>`;
+      runningCount += getHiLoValue(card);
+    }
+
+    function checkCount() {
+      document.getElementById("runningCount").innerText = runningCount;
+    }
+
+    function resetDeck() {
+      buildDeck();
+      runningCount = 0;
+      document.getElementById("runningCount").innerText = "Hidden";
+      document.getElementById("deckDisplay").innerHTML = "";
+      document.getElementById("log").innerHTML = "<strong>Log:</strong> Deck shuffled. Start counting!";
+    }
+
+    // Initialize on load
+    resetDeck();
+  </script>
+</body>
+</html>
