@@ -3,78 +3,187 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Card Counting Trainer</title>
+  <title>Blackjack Card Counting Trainer</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #0b3d91; color: white; margin: 0; padding: 20px; text-align: center; }
-    .container { max-width: 700px; margin: 0 auto; padding: 20px; background: #1c1c1c; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.6); }
-    h1 { color: #ffd700; }
-    button { margin: 10px; padding: 10px 20px; border: none; border-radius: 8px; background: #ffd700; font-size: 16px; cursor: pointer; }
-    button:hover { background: #e6c200; }
-    .card { display: inline-block; background: white; color: black; font-weight: bold; font-size: 20px; padding: 10px 15px; border-radius: 8px; margin: 5px; }
-    #log { text-align: left; margin-top: 20px; font-size: 14px; background: #111; padding: 15px; border-radius: 10px; }
-    #deckDisplay { font-size: 20px; margin-top: 15px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b0b0b;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+    }
+    .card-table {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      color: black;
+      border-radius: 8px;
+      width: 70px;
+      height: 100px;
+      margin: 5px;
+      position: relative;
+      font-weight: bold;
+    }
+    .corner {
+      position: absolute;
+      font-size: 14px;
+    }
+    .top-left {
+      top: 5px;
+      left: 5px;
+    }
+    .bottom-right {
+      bottom: 5px;
+      right: 5px;
+      transform: rotate(180deg);
+    }
+    .suit {
+      margin-top: 30px;
+      font-size: 24px;
+    }
+    .count-value {
+      position: absolute;
+      bottom: 3px;
+      left: 3px;
+      font-size: 12px;
+      background: yellow;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    #betRecommendation {
+      font-size: 18px;
+      margin-top: 15px;
+      color: #00ffcc;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🃏 Card Counting Practice Tool (Hi-Lo)</h1>
-    <p>Click "Deal Card" to start. Count in your head. Then check your count.</p>
+    <h1>Blackjack Card Counting Trainer</h1>
     <div>
-      <button onclick="dealCard()">🎴 Deal Card</button>
-      <button onclick="checkCount()">🧠 Show Running Count</button>
-      <button onclick="resetDeck()">🔁 Reset Deck</button>
+      <button onclick="dealCard()">Deal Card</button>
+      <button onclick="checkCount()">Show Count</button>
+      <button onclick="resetDeck()">Shuffle Deck</button>
+      <button onclick="calculateTotal()">Total Values</button>
+      <button onclick="recommendBet()">Bet Advice</button>
+      <button onclick="showBetAdvice()">Show Betting Tip</button>
     </div>
-    <div id="deckDisplay"></div>
-    <h3>Running Count: <span id="runningCount">Hidden</span></h3>
-    <div id="log"></div>
+    <div class="card-table" id="deckDisplay"></div>
+    <div id="runningCount">Running Count: Hidden</div>
+    <div id="calculationSum"></div>
+    <div id="betRecommendation"></div>
   </div>
 
   <script>
     let deck = [];
     let runningCount = 0;
-    const values = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"];
+    let revealedCards = [];
+    const suits = ["♥", "♦", "♠", "♣"];
+    const values = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
     function buildDeck() {
       deck = [];
-      for (let i = 0; i < 4; i++) { // 1 deck (4 suits)
+      for (let suit of suits) {
         for (let val of values) {
-          deck.push(val);
+          deck.push({ value: val, suit: suit });
         }
       }
-      deck = deck.sort(() => Math.random() - 0.5); // Shuffle
+      deck = deck.sort(() => Math.random() - 0.5);
     }
 
     function getHiLoValue(card) {
-      if ([2,3,4,5,6].includes(card)) return 1;
-      if ([10,"J","Q","K","A"].includes(card)) return -1;
+      if (["2","3","4","5","6"].includes(card.value)) return 1;
+      if (["10","J","Q","K","A"].includes(card.value)) return -1;
       return 0;
+    }
+
+    function getCardNumericValue(card) {
+      if (["J","Q","K"].includes(card.value)) return 10;
+      if (card.value === "A") return 11;
+      return parseInt(card.value);
     }
 
     function dealCard() {
       if (deck.length === 0) {
-        alert("Deck is empty. Please reset.");
+        alert("Deck is empty. Please shuffle.");
         return;
       }
       const card = deck.pop();
-      const value = typeof card === 'string' ? card : card.toString();
-      document.getElementById("deckDisplay").innerHTML += `<span class='card'>${value}</span>`;
-      runningCount += getHiLoValue(card);
+      const countValue = getHiLoValue(card);
+      runningCount += countValue;
+      revealedCards.push(card);
+
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card';
+      cardEl.innerHTML = `
+        <div class="corner top-left">${card.value}<br>${card.suit}</div>
+        <div class="suit">${card.suit}</div>
+        <div class="corner bottom-right">${card.value}<br>${card.suit}</div>
+        <div class="count-value">${countValue > 0 ? '+' : ''}${countValue}</div>
+      `;
+      document.getElementById("deckDisplay").appendChild(cardEl);
     }
 
     function checkCount() {
-      document.getElementById("runningCount").innerText = runningCount;
+      document.getElementById("runningCount").innerText = `Running Count: ${runningCount}`;
+    }
+
+    function calculateTotal() {
+      const total = revealedCards.reduce((sum, card) => sum + getCardNumericValue(card), 0);
+      document.getElementById("calculationSum").innerText = `Total Value: ${total}`;
+    }
+
+    function recommendBet() {
+      let action = "";
+      let amount = 25;
+      if (runningCount <= 0) {
+        action = "Lower your bet";
+        amount = 25;
+      } else if (runningCount === 1) {
+        action = "Maintain or slightly raise your bet";
+        amount = 50;
+      } else if (runningCount === 2) {
+        action = "Raise your bet";
+        amount = 75;
+      } else if (runningCount === 3) {
+        action = "Raise more";
+        amount = 100;
+      } else if (runningCount >= 4) {
+        action = "Double your bet";
+        amount = 150;
+      }
+      document.getElementById("betRecommendation").innerText = `${action} | Recommended Bet: $${amount}`;
+    }
+
+    function showBetAdvice() {
+      recommendBet();
     }
 
     function resetDeck() {
       buildDeck();
       runningCount = 0;
-      document.getElementById("runningCount").innerText = "Hidden";
+      revealedCards = [];
       document.getElementById("deckDisplay").innerHTML = "";
-      document.getElementById("log").innerHTML = "<strong>Log:</strong> Deck shuffled. Start counting!";
+      document.getElementById("runningCount").innerText = "Running Count: Hidden";
+      document.getElementById("calculationSum").innerText = "";
+      document.getElementById("betRecommendation").innerText = "";
     }
 
-    // Initialize on load
     resetDeck();
   </script>
 </body>
 </html>
+
